@@ -1,0 +1,195 @@
+#!/usr/bin/env python3
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright (c) 2023 Jani Nikula <jani@nikula.org>
+
+import argparse
+import datetime
+import re
+
+import jinja2
+
+def _version_plus(major, minor):
+    minor += 1
+
+    if minor >= 20:
+        major += 1
+        minor = 0
+
+    return major, minor
+
+def _version_minus(major, minor):
+    minor -= 1
+
+    if minor < 0:
+        major -= 1
+        minor = 19
+
+    return major, minor
+
+class Tag:
+    def __init__(self, major=None, minor=None, rc=None,
+                 date_start=None, date_end=None, prediction=False):
+        self._major = major
+        self._minor = minor
+        self._rc = rc
+        self._date_start = date_start
+        self._date_end = date_end if date_end else date_start
+        self._prediction = prediction
+
+    @property
+    def tag(self):
+        rc = f'-rc{self._rc}' if self._rc is not None else ''
+
+        return f'v{self._major}.{self._minor}{rc}'
+
+    @property
+    def development_cycle(self):
+        return f'v{self._major}.{self._minor}'
+
+    @property
+    def next_development_cycle(self):
+        major, minor = _version_plus(self._major, self._minor)
+        return f'v{major}.{minor}'
+
+    @property
+    def date(self):
+        fmt = '%Y-%m-%d'
+
+        start = self._date_start.strftime(fmt)
+
+        if self._date_start == self._date_end:
+            end = ''
+        else:
+            end = '/' + self._date_end.strftime(fmt)
+
+        return f'{start}{end}'
+
+    def __repr__(self):
+        return f'{self.tag} {self.date}'
+
+    def is_release(self):
+        return self._rc is None
+
+    def is_rc(self, rc):
+        return self._rc == rc
+
+    def previous(self):
+        if self.is_release():
+            return None  # can't go back
+
+        if self._rc == 1:
+            major, minor = _version_minus(self._major, self._minor)
+            rc = None
+            weeks = (-2, -2)
+        else:
+            major = self._major
+            minor = self._minor
+            rc = self._rc - 1
+            weeks = (-1, -1)
+
+        date_start = self._date_start + datetime.timedelta(weeks=weeks[0])
+        date_end = self._date_end + datetime.timedelta(weeks=weeks[1])
+
+        return Tag(major=major, minor=minor, rc=rc, date_start=date_start,
+                   date_end=date_end, prediction=False)
+
+    def next(self):
+        if self.is_release():
+            major, minor = _version_plus(self._major, self._minor)
+            rc = 1
+            weeks = (2, 2)
+        elif self._rc < 7:
+            major = self._major
+            minor = self._minor
+            rc = self._rc + 1
+            weeks = (1, 1)
+        else:  # rc7+ -> release
+            major = self._major
+            minor = self._minor
+            rc = None
+
+            if self._rc == 7:
+                # Don't predict -rc8, predict release with inaccuracy
+                weeks = (1, 2)
+            else:
+                weeks = (1, 1)
+
+        date_start = self._date_start + datetime.timedelta(weeks=weeks[0])
+        date_end = self._date_end + datetime.timedelta(weeks=weeks[1])
+
+        return Tag(major=major, minor=minor, rc=rc, date_start=date_start,
+                   date_end=date_end, prediction=True)
+
+def _tag_type(s):
+    mo = re.match(r'^v?(?P<major>[0-9]+)\.(?P<minor>[0-9]+)(-rc(?P<rc>[0-9]+))?$', s)
+    if mo is None:
+        raise argparse.ArgumentTypeError(f'"{s}" is not a valid tag format')
+
+    def to_int(v): return int(v) if v is not None else None
+
+    return {k: to_int(v) for k, v in mo.groupdict().items()}
+
+def _date_type(s):
+    try:
+        d = datetime.datetime.fromisoformat(s)
+    except ValueError as e:
+        raise argparse.ArgumentTypeError(e)
+
+    # If it's not a Sunday, round to nearest Sunday
+    if d.weekday() != 6:
+        if d.weekday() < 3:
+            days = -(d.weekday() + 1)
+        else:
+            days = 6 - d.weekday()
+
+        d += datetime.timedelta(days=days)
+
+    return d
+
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--tag', type=_tag_type, required=True,
+                        help='Tag of the format v<major>.<minor>[-rc<n>], e.g. v6.7 or v6.7-rc5')
+    parser.add_argument('--date', type=_date_type, required=True,
+                        help='Date of the tag in ISO format')
+    parser.add_argument('--releases', type=int, default=3,
+                        help='Number of development cycles to predict')
+    parser.add_argument('--template', default='index.template.rst',
+                        help='Template to use')
+
+    args = parser.parse_args()
+
+    tag_params = {
+        'date_start': args.date
+    } | args.tag
+
+    reference_tag = Tag(**tag_params)
+
+    tags = [reference_tag]
+
+    # backtrack to previous release
+    t = reference_tag.previous()
+    while t is not None:
+        tags.insert(0, t)
+        t = t.previous()
+
+    # predict future tags
+    t = reference_tag
+
+    release = 0
+    while release < args.releases:
+        t = t.next()
+
+        if t.is_release():
+            release += 1
+
+        tags.append(t)
+
+    env = jinja2.Environment(loader=jinja2.FileSystemLoader('.'))
+    template = env.get_template(args.template)
+    output = template.render(reference_tag=reference_tag, tags=tags)
+
+    print(output)
+
+if __name__ == '__main__':
+    main()

@@ -1,0 +1,47 @@
+name: Read Tea Leaves
+
+on:
+  push:
+    branches:
+      - main
+  schedule:
+    # Every Monday at 05:00 and 09:00 UTC
+    - cron: "0 5 * * 1"
+    - cron: "0 9 * * 1"
+
+jobs:
+  study-tea-leaves:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-python@v4
+        with:
+          python-version: "3.11"
+      - run: pip install --requirement requirements.txt --upgrade --upgrade-strategy eager
+      - run: ./build
+      - uses: actions/upload-artifact@v3
+        with:
+          name: tea-leaves
+          path: index.html
+          if-no-files-found: error
+
+  make-predictions:
+    runs-on: ubuntu-latest
+    needs: study-tea-leaves
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{steps.deployment.outputs.page_url}}
+    steps:
+      - uses: actions/download-artifact@v3
+        with:
+          name: tea-leaves
+          path: .
+      - uses: actions/configure-pages@v1
+      - uses: actions/upload-pages-artifact@v1
+        with:
+           path: .
+      - id: deployment
+        uses: actions/deploy-pages@v1
