@@ -31,4 +31,4 @@ echo $TAG
 echo $DATE
 
 ./kernel-tea-leaves --tag="${TAG}" --date="${DATE}" > index.rst
-rst2html.py --strict --no-raw index.rst > index.html
+rst2html --strict --no-raw index.rst > index.html
