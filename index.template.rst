@@ -21,7 +21,7 @@ the `tea leaves`_ say:
   *Merge window for features heading to {{ tag.development_cycle }}*
 
 {% endif %}
-{% if tag._prediction %}
+{% if tag.is_prediction %}
 {{ tag.tag }} {{ 'release' if tag.is_release }} predicted {{ tag.date }}
 {% else %}
 `{{ tag.tag }} <https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/tag/?h={{ tag.tag }}>`_ {{ tag.date }}

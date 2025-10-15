@@ -76,6 +76,10 @@ class Tag:
     def is_rc(self, rc):
         return self._rc == rc
 
+    @property
+    def is_prediction(self):
+        return self._prediction
+
     def previous(self):
         if self.is_release:
             return None  # can't go back
