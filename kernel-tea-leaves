@@ -8,24 +8,6 @@ import re
 
 import jinja2
 
-def _version_plus(major, minor):
-    minor += 1
-
-    if minor >= 20:
-        major += 1
-        minor = 0
-
-    return major, minor
-
-def _version_minus(major, minor):
-    minor -= 1
-
-    if minor < 0:
-        major -= 1
-        minor = 19
-
-    return major, minor
-
 class Tag:
     def __init__(self, major=None, minor=None, rc=None,
                  date_start=None, date_end=None, prediction=False):
@@ -35,6 +17,26 @@ class Tag:
         self._date_start = date_start
         self._date_end = date_end if date_end else date_start
         self._prediction = prediction
+
+    @staticmethod
+    def _version_plus(major, minor):
+        minor += 1
+
+        if minor >= 20:
+            major += 1
+            minor = 0
+
+        return major, minor
+
+    @staticmethod
+    def _version_minus(major, minor):
+        minor -= 1
+
+        if minor < 0:
+            major -= 1
+            minor = 19
+
+        return major, minor
 
     @property
     def tag(self):
@@ -48,7 +50,7 @@ class Tag:
 
     @property
     def next_development_cycle(self):
-        major, minor = _version_plus(self._major, self._minor)
+        major, minor = self._version_plus(self._major, self._minor)
         return f'v{major}.{minor}'
 
     @property
@@ -78,7 +80,7 @@ class Tag:
             return None  # can't go back
 
         if self._rc == 1:
-            major, minor = _version_minus(self._major, self._minor)
+            major, minor = self._version_minus(self._major, self._minor)
             rc = None
             weeks = (-2, -2)
         else:
@@ -95,7 +97,7 @@ class Tag:
 
     def next(self):
         if self.is_release():
-            major, minor = _version_plus(self._major, self._minor)
+            major, minor = self._version_plus(self._major, self._minor)
             rc = 1
             weeks = (2, 2)
         elif self._rc < 7:
