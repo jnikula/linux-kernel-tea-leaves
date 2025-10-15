@@ -122,6 +122,31 @@ class Tag:
         return Tag(major=major, minor=minor, rc=rc, date_start=date_start,
                    date_end=date_end, prediction=True)
 
+def predict(tag_params, num_releases):
+    reference_tag = Tag(**tag_params)
+
+    tags = [reference_tag]
+
+    # backtrack to previous release
+    t = reference_tag.previous()
+    while t is not None:
+        tags.insert(0, t)
+        t = t.previous()
+
+    # predict future tags
+    t = reference_tag
+
+    release = 0
+    while release < num_releases:
+        t = t.next()
+
+        if t.is_release():
+            release += 1
+
+        tags.append(t)
+
+    return reference_tag, tags
+
 def _tag_type(s):
     mo = re.match(r'^v?(?P<major>[0-9]+)\.(?P<minor>[0-9]+)(-rc(?P<rc>[0-9]+))?$', s)
     if mo is None:
@@ -165,27 +190,7 @@ def main():
         'date_start': args.date
     } | args.tag
 
-    reference_tag = Tag(**tag_params)
-
-    tags = [reference_tag]
-
-    # backtrack to previous release
-    t = reference_tag.previous()
-    while t is not None:
-        tags.insert(0, t)
-        t = t.previous()
-
-    # predict future tags
-    t = reference_tag
-
-    release = 0
-    while release < args.releases:
-        t = t.next()
-
-        if t.is_release():
-            release += 1
-
-        tags.append(t)
+    reference_tag, tags = predict(tag_params, args.releases)
 
     env = jinja2.Environment(loader=jinja2.FileSystemLoader('.'))
     template = env.get_template(args.template)
