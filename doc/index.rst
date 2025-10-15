@@ -19,3 +19,9 @@ Please consider `starring the project`_ if you find this information useful.
    :hidden:
 
    Predictions <self>
+
+.. contents:: Development cycles
+   :local:
+   :backlinks: none
+
+.. linux-kernel-tea-leaves::

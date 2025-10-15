@@ -4,6 +4,11 @@
 # For the full list of built-in configuration values, see the documentation:
 # https://www.sphinx-doc.org/en/master/usage/configuration.html
 
+import pathlib
+import sys
+
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent.parent / 'src'))
+
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
@@ -14,7 +19,7 @@ author = 'Jani Nikula'
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
 
-extensions = []
+extensions = ['tealeaves']
 
 templates_path = ['_templates']
 exclude_patterns = []
@@ -40,3 +45,7 @@ html_sidebars = {
         'navigation.html',
     ]
 }
+
+# -- Options for Linux Kernel Tea Leaves --------------------------------------
+#linux_kernel_tea_leaves_template = 'tealeaves.rst'
+#linux_kernel_tea_leaves_releases = 3

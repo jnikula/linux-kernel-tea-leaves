@@ -1,0 +1,26 @@
+<!-- SPDX-License-Identifier: AGPL-3.0-or-later -->
+<!-- SPDX-FileCopyrightText: 2025 Jani Nikula <jani@nikula.org> -->
+
+<p>
+  Based on <a href="https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/tag/?h={{ reference_tag.tag }}">{{ reference_tag.tag }}</a> having been tagged on {{ reference_tag.date }},
+  the tea leaves say:
+</p>
+
+{% for tag in tags[1:] %}
+{% if tag.is_rc(1) %}
+<h2>{{ tag.development_cycle }} development cycle</h2>
+
+<p><i>Merge window for features heading to {{ tag.development_cycle }}</i></p>
+
+{% endif %}
+{% if tag.is_prediction %}
+<p>{{ tag.tag }} {{ 'release' if tag.is_release }} predicted {{ tag.date }}</p>
+{% else %}
+<p><a href="https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/tag/?h={{ tag.tag }}">{{ tag.tag }}</a> {{ tag.date }}</p>
+{% endif %}
+
+{% if tag.is_rc(5) %}
+<p><i>Deadline for features heading to {{ tag.next_development_cycle }} release in many subsystems, including drm.</i></p>
+{% endif %}
+
+{% endfor %}
