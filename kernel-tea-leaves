@@ -122,7 +122,34 @@ class Tag:
         return Tag(major=major, minor=minor, rc=rc, date_start=date_start,
                    date_end=date_end, prediction=True)
 
-def predict(tag_params, num_releases):
+def _parse_tag_date(tag_string, date_string):
+    # tag
+    mo = re.match(r'^v?(?P<major>[0-9]+)\.(?P<minor>[0-9]+)(-rc(?P<rc>[0-9]+))?$', tag_string)
+    if mo is None:
+        raise ValueError(f'"{tag_string}" is not a valid tag format')
+
+    def to_int(v): return int(v) if v is not None else None
+
+    res = {k: to_int(v) for k, v in mo.groupdict().items()}
+
+    # date
+    d = datetime.datetime.fromisoformat(date_string)
+
+    # If it's not a Sunday, round to nearest Sunday
+    if d.weekday() != 6:
+        if d.weekday() < 3:
+            days = -(d.weekday() + 1)
+        else:
+            days = 6 - d.weekday()
+
+        d += datetime.timedelta(days=days)
+
+    res['date_start'] = d
+
+    return res
+
+def predict(tag_string, date_string, num_releases):
+    tag_params = _parse_tag_date(tag_string, date_string)
     reference_tag = Tag(**tag_params)
 
     tags = [reference_tag]
@@ -152,9 +179,7 @@ def _tag_type(s):
     if mo is None:
         raise argparse.ArgumentTypeError(f'"{s}" is not a valid tag format')
 
-    def to_int(v): return int(v) if v is not None else None
-
-    return {k: to_int(v) for k, v in mo.groupdict().items()}
+    return s
 
 def _date_type(s):
     try:
@@ -162,16 +187,7 @@ def _date_type(s):
     except ValueError as e:
         raise argparse.ArgumentTypeError(e)
 
-    # If it's not a Sunday, round to nearest Sunday
-    if d.weekday() != 6:
-        if d.weekday() < 3:
-            days = -(d.weekday() + 1)
-        else:
-            days = 6 - d.weekday()
-
-        d += datetime.timedelta(days=days)
-
-    return d
+    return s
 
 def main():
     parser = argparse.ArgumentParser()
@@ -186,11 +202,7 @@ def main():
 
     args = parser.parse_args()
 
-    tag_params = {
-        'date_start': args.date
-    } | args.tag
-
-    reference_tag, tags = predict(tag_params, args.releases)
+    reference_tag, tags = predict(args.tag, args.date, args.releases)
 
     env = jinja2.Environment(loader=jinja2.FileSystemLoader('.'))
     template = env.get_template(args.template)
