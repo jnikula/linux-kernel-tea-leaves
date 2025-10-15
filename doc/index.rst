@@ -20,6 +20,7 @@ Please consider `starring the project`_ if you find this information useful.
 
    Predictions <self>
    info
+   extension
 
 .. contents:: Development cycles
    :local:
