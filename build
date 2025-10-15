@@ -30,5 +30,5 @@ DATE=$(get_date "${TAG}")
 echo $TAG
 echo $DATE
 
-./kernel-tea-leaves --tag="${TAG}" --date="${DATE}" > index.rst
+python3 src/tealeaves/predict.py --tag="${TAG}" --date="${DATE}" > index.rst
 rst2html --strict --no-raw index.rst > index.html
