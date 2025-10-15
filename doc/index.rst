@@ -19,6 +19,7 @@ Please consider `starring the project`_ if you find this information useful.
    :hidden:
 
    Predictions <self>
+   info
 
 .. contents:: Development cycles
    :local:
