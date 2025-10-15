@@ -18,11 +18,11 @@ jobs:
         with:
           python-version: "3.11"
       - run: pip install --requirement requirements.txt --upgrade --upgrade-strategy eager
-      - run: ./build
+      - run: make html
       - uses: actions/upload-artifact@v4
         with:
           name: tea-leaves
-          path: index.html
+          path: out/html/
           if-no-files-found: error
 
   make-predictions:
