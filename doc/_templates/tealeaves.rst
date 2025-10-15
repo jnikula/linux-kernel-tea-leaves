@@ -23,7 +23,7 @@ having been tagged on {{ reference_tag.date }}, the tea leaves say:
 {% endif %}
 
 {% if tag.is_rc(5) %}
-  *Deadline for features heading to {{ tag.next_development_cycle }} release in many subsystems, including drm.*
+  *The drm subsystem deadline for features heading to {{ tag.next_development_cycle }} release.*
 {% endif %}
 
 {% endfor %}
